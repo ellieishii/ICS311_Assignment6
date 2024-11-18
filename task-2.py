@@ -103,14 +103,14 @@ def bfs(graph, start_node):
 def create_graph(users, posts, interesting_users=None):
     G = nx.Graph()
 
-    # Add nodes for users
+    # Add nodes for users and assign colors based on whether they are interesting
     for user in users.values():
         color = 'red' if user in interesting_users else 'blue'
-        G.add_node(user.username, type='user', color=color)
+        G.add_node(user.username, type='user', color=color, label=user.real_name)  # Store real_name for label
 
-    # Add nodes for posts
+    # Add nodes for posts and assign a default color (e.g., 'gray')
     for post in posts:
-        G.add_node(post.post_id, type='post')
+        G.add_node(post.post_id, type='post', color='gray', label=str(post.post_id))  # Assign post_id as label
 
     # Add edges for user connections (e.g., follows)
     for user in users.values():
@@ -130,14 +130,28 @@ def create_graph(users, posts, interesting_users=None):
 
 # Visualization function for the graph
 def visualize_graph(G):
-    pos = nx.spring_layout(G)  # Using spring layout for better visualization
-    colors = [G.nodes[node]['color'] for node in G.nodes]
+    pos = nx.spring_layout(G, k=0.5, iterations=50)  # Using spring layout with better node spacing
+    colors = [G.nodes[node]['color'] for node in G.nodes]  # Get the color for each node
 
-    plt.figure(figsize=(10, 10))
-    nx.draw_networkx_nodes(G, pos, node_color=colors, node_size=300)
+    # Labels for users and posts (user names for users, post IDs for posts)
+    labels = {}
+    for node in G.nodes:
+        if G.nodes[node]['type'] == 'user':
+            labels[node] = G.nodes[node]['label']  # User real_name as label
+        elif G.nodes[node]['type'] == 'post':
+            labels[node] = str(G.nodes[node]['label'])  # Post ID as label
+
+    # Increase node size for better visibility
+    plt.figure(figsize=(12, 12))
+    nx.draw_networkx_nodes(G, pos, node_color=colors, node_size=1000, alpha=0.7)  # Larger nodes
+
+    # Draw edges
     nx.draw_networkx_edges(G, pos, alpha=0.5)
-    nx.draw_networkx_labels(G, pos, font_size=12, font_color="white")
 
+    # Draw labels (both for users and posts)
+    nx.draw_networkx_labels(G, pos, labels=labels, font_size=12, font_color="black", font_weight="bold")
+
+    # Set title and remove axis
     plt.title("Social Media Network Visualization")
     plt.axis("off")
     plt.show()
@@ -148,23 +162,31 @@ if __name__ == "__main__":
     users = {
         "user1": User("user1", "Alice", 30, "F", "New York"),
         "user2": User("user2", "Bob", 25, "M", "Los Angeles"),
-        "user3": User("user3", "Charlie", 35, "M", "Chicago")
+        "user3": User("user3", "Charlie", 35, "M", "Chicago"),
+        "user4": User("user4", "David", 28, "M", "San Francisco"),
+        "user5": User("user5", "Eve", 22, "F", "Miami")
     }
 
     # Creating posts
     posts = [
         Post(1, users["user1"], "This is post 1", "2024-01-01"),
         Post(2, users["user2"], "This is post 2", "2024-01-02"),
-        Post(3, users["user3"], "This is post 3", "2024-01-03")
+        Post(3, users["user3"], "This is post 3", "2024-01-03"),
+        Post(4, users["user4"], "This is post 4", "2024-01-04"),
+        Post(5, users["user5"], "This is post 5", "2024-01-05")
     ]
 
     # Adding views and comments
     posts[0].add_view(users["user2"])
     posts[0].add_comment(Comment(1, users["user2"], "Nice post!", "2024-01-01"))
+    posts[2].add_view(users["user4"])
+    posts[2].add_comment(Comment(2, users["user4"], "Interesting thought!", "2024-01-02"))
+    posts[3].add_view(users["user1"])
 
     # Adding connections (e.g., following)
     users["user1"].add_connection(users["user2"])
     users["user2"].add_connection(users["user3"])
+    users["user4"].add_connection(users["user5"])
 
     # Identifying interesting users (e.g., users with more than 1 post)
     interesting_users = identify_interesting_users(users, min_posts=1)
